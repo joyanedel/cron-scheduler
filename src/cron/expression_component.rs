@@ -1,16 +1,16 @@
 use std::str::FromStr;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum CronExpressionComponent {
     Value(u8),
     Range(u8, u8),
     List(Vec<CronExpressionComponent>),
-    Step(Box<CronExpressionComponent>),
+    Step(Box<CronExpressionComponent>, u8),
     All,
     Ignore,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum CronExpressionComponentError {
     InvalidValue,
 }
@@ -23,9 +23,20 @@ impl FromStr for CronExpressionComponent {
             return Ok(Self::All);
         } else if s == "?" {
             return Ok(Self::Ignore);
+        } else if s.contains("/") {
+            let values = s.split_once("/");
+            let (expr, step) = match values {
+                Some((e, s)) => (e, s),
+                _ => return Err(CronExpressionComponentError::InvalidValue),
+            };
+            let step =
+                u8::from_str(step).map_err(|_| CronExpressionComponentError::InvalidValue)?;
+
+            return Ok(Self::Step(Box::new(Self::from_str(expr)?), step));
         } else if s.contains(",") {
             let values = s.split(",");
-            let results: Result<Vec<_>, _> = values.map(CronExpressionComponent::from_str).collect();
+            let results: Result<Vec<_>, _> =
+                values.map(CronExpressionComponent::from_str).collect();
 
             return Ok(Self::List(results?));
         } else if s.contains("-") {
@@ -97,23 +108,53 @@ mod tests {
     fn two_single_value_comma_separated_values_is_parsed_as_list_of_single_values() {
         let input = "1,10";
         let result = CronExpressionComponent::from_str(input);
-        assert!(result.is_ok_and(|x| x == CronExpressionComponent::List(
-            vec![
+        assert!(result.is_ok_and(|x| x
+            == CronExpressionComponent::List(vec![
                 CronExpressionComponent::Value(1),
                 CronExpressionComponent::Value(10)
-            ]
-        )))
+            ])))
     }
 
     #[test]
     fn comma_separated_single_and_range_values_are_parsed_as_list_of_single_and_range_value() {
         let input = "2-5,10";
         let result = CronExpressionComponent::from_str(input);
-        assert!(result.is_ok_and(|x| x == CronExpressionComponent::List(
-            vec![
-                CronExpressionComponent::Range(2,5),
+        assert!(result.is_ok_and(|x| x
+            == CronExpressionComponent::List(vec![
+                CronExpressionComponent::Range(2, 5),
                 CronExpressionComponent::Value(10)
-            ]
-        )))
+            ])))
+    }
+
+    #[test]
+    fn invalid_range_raises_invalid_value_error() {
+        let input = "5-";
+        let result = CronExpressionComponent::from_str(input);
+        assert!(result.is_err_and(|x| x == CronExpressionComponentError::InvalidValue));
+    }
+
+    #[test]
+    fn step_single_value_is_parsed_as_step() {
+        let input = "5/15";
+        let result = CronExpressionComponent::from_str(input);
+        assert!(
+            result.is_ok_and(|x| x
+                == CronExpressionComponent::Step(Box::new(CronExpressionComponent::Value(5)), 15))
+        )
+    }
+
+    #[test]
+    fn complex_but_valid_expression_is_parsed_correctly() {
+        let input = "1,2,3-10/10";
+        let result = CronExpressionComponent::from_str(input);
+        assert!(result.is_ok_and(|x| x
+            == CronExpressionComponent::Step(
+                Box::new(CronExpressionComponent::List(vec![
+                    CronExpressionComponent::Value(1),
+                    CronExpressionComponent::Value(2),
+                    CronExpressionComponent::Range(3, 10),
+                ])),
+                10
+            )))
     }
 }
