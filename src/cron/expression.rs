@@ -17,7 +17,7 @@ use std::str::FromStr;
 ///
 /// Example: 0 0 * * * means every day at time 00:00
 #[derive(Debug, PartialEq)]
-struct CronExpression {
+pub struct CronExpression {
     minute: CronExpressionComponent,
     hour: CronExpressionComponent,
     day: CronExpressionComponent,
@@ -25,7 +25,8 @@ struct CronExpression {
     weekday: CronExpressionComponent,
 }
 
-enum CronExpressionError {
+#[derive(Debug, PartialEq)]
+pub enum CronExpressionError {
     Malformed,
     InvalidComponent,
 }
