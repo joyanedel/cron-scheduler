@@ -56,7 +56,7 @@ mod test_expression_matches_datetimetests {
     }
 
     #[test]
-    fn date_outsode_range_matching_expression_returns_false() {
+    fn date_outside_range_matching_expression_returns_false() {
         let cron_expression = CronExpression::from_str("* 12-20 1 1 ?").unwrap();
         let date = chrono::NaiveDateTime::parse_from_str("2025-01-01 06:30:00", "%F %T")
             .unwrap()
