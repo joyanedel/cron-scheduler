@@ -18,11 +18,11 @@ use std::str::FromStr;
 /// Example: 0 0 * * * means every day at time 00:00
 #[derive(Debug, PartialEq)]
 pub struct CronExpression {
-    minute: CronExpressionComponent,
-    hour: CronExpressionComponent,
-    day: CronExpressionComponent,
-    month: CronExpressionComponent,
-    weekday: CronExpressionComponent,
+    pub minute: CronExpressionComponent,
+    pub hour: CronExpressionComponent,
+    pub day: CronExpressionComponent,
+    pub month: CronExpressionComponent,
+    pub weekday: CronExpressionComponent,
 }
 
 #[derive(Debug, PartialEq)]
