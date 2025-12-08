@@ -15,21 +15,14 @@ fn expression_matches_datetime(
         return Ok(false);
     }
 
-    // check if there is imcompatibility between day and weekday
-    if expr.day == CronExpressionComponent::Ignore
-        && expr.weekday == CronExpressionComponent::Ignore
+    if !expression_component_matches_number(expr.day, datetime.day())
+        && !expression_component_matches_number(
+            expr.weekday,
+            datetime.weekday().number_from_monday(),
+        )
     {
-        return Err(CronExpressionError::Malformed);
-    }
-
-    if !expression_component_matches_number(expr.day, datetime.day()) {
         return Ok(false);
     } else if !expression_component_matches_number(expr.month, datetime.month()) {
-        return Ok(false);
-    } else if !expression_component_matches_number(
-        expr.weekday,
-        datetime.weekday().number_from_monday(),
-    ) {
         return Ok(false);
     }
 
