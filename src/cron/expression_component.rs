@@ -23,6 +23,12 @@ impl FromStr for CronExpressionComponent {
             return Ok(Self::All);
         } else if s == "?" {
             return Ok(Self::Ignore);
+        } else if s.contains(",") {
+            let values = s.split(",");
+            let results: Result<Vec<_>, _> =
+                values.map(CronExpressionComponent::from_str).collect();
+
+            return Ok(Self::List(results?));
         } else if s.contains("/") {
             let values = s.split_once("/");
             let (expr, step) = match values {
@@ -33,12 +39,6 @@ impl FromStr for CronExpressionComponent {
                 u8::from_str(step).map_err(|_| CronExpressionComponentError::InvalidValue)?;
 
             return Ok(Self::Step(Box::new(Self::from_str(expr)?), step));
-        } else if s.contains(",") {
-            let values = s.split(",");
-            let results: Result<Vec<_>, _> =
-                values.map(CronExpressionComponent::from_str).collect();
-
-            return Ok(Self::List(results?));
         } else if s.contains("-") {
             let values = s.split_once("-");
             let (start, end) = match values {
@@ -148,13 +148,10 @@ mod tests {
         let input = "1,2,3-10/10";
         let result = CronExpressionComponent::from_str(input);
         assert!(result.is_ok_and(|x| x
-            == CronExpressionComponent::Step(
-                Box::new(CronExpressionComponent::List(vec![
-                    CronExpressionComponent::Value(1),
-                    CronExpressionComponent::Value(2),
-                    CronExpressionComponent::Range(3, 10),
-                ])),
-                10
-            )))
+            == CronExpressionComponent::List(vec![
+                CronExpressionComponent::Value(1),
+                CronExpressionComponent::Value(2),
+                CronExpressionComponent::Step(Box::new(CronExpressionComponent::Range(3, 10)), 10)
+            ])))
     }
 }
