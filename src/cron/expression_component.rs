@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum CronExpressionComponent {
     Value(u8),
     Range(u8, u8),

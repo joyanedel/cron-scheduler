@@ -16,7 +16,52 @@ fn expression_component_matches_number(
     expr_component: CronExpressionComponent,
     date_component: u32,
 ) -> bool {
-    unimplemented!()
+    match expr_component {
+        CronExpressionComponent::All => true,
+        CronExpressionComponent::Value(n) => n as u32 == date_component,
+        CronExpressionComponent::Ignore => true,
+        CronExpressionComponent::Range(a, b) => {
+            a as u32 <= date_component && date_component <= b as u32
+        }
+        CronExpressionComponent::Step(ce, step) => match ce.as_ref() {
+            CronExpressionComponent::Range(a, b) if a <= b => {
+                if *a as u32 == date_component {
+                    true
+                } else {
+                    expression_component_matches_number(
+                        CronExpressionComponent::Step(
+                            Box::new(CronExpressionComponent::Range(a + step, *b)),
+                            step,
+                        ),
+                        date_component,
+                    )
+                }
+            }
+            CronExpressionComponent::Value(n) => {
+                if *n as u32 == date_component {
+                    true
+                } else {
+                    // use 31 as the maximum number to be used in a cron expression
+                    // minutes and hours goes from 0 to 59
+                    // days from 1 to 31
+                    // months from 1 to 12
+                    // weekdays from 1 to 7
+                    expression_component_matches_number(
+                        CronExpressionComponent::Step(
+                            Box::new(CronExpressionComponent::Range(n + step, 59)),
+                            step,
+                        ),
+                        date_component,
+                    )
+                }
+            }
+            _ => false,
+        },
+        CronExpressionComponent::List(v) => v
+            .iter()
+            .map(|e| expression_component_matches_number(e.clone(), date_component))
+            .any(|v| v),
+    }
 }
 
 #[cfg(test)]
@@ -149,6 +194,24 @@ mod test_expression_component_matches_nunber {
             CronExpressionComponent::Step(Box::new(CronExpressionComponent::Value(2)), 5);
         let date_component = 13;
         let result = expression_component_matches_number(expr_component, date_component);
+        assert!(!result)
+    }
+
+    #[test]
+    fn step_ranged_component_matches_number() {
+        let expr_component =
+            CronExpressionComponent::Step(Box::new(CronExpressionComponent::Range(5, 10)), 2);
+        let date_component = 9;
+        let result = expression_component_matches_number(expr_component, date_component);
         assert!(result)
+    }
+
+    #[test]
+    fn step_ranged_component_doesn_match_number_out_of_range() {
+        let expr_component =
+            CronExpressionComponent::Step(Box::new(CronExpressionComponent::Range(5, 10)), 2);
+        let date_component = 8;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(!result)
     }
 }
