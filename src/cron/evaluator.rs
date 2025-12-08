@@ -37,18 +37,18 @@ fn expression_component_matches_number(
                     )
                 }
             }
-            CronExpressionComponent::Value(n) => {
+            // use 31 as the maximum number to be used in a cron expression
+            // minutes and hours goes from 0 to 59
+            // days from 1 to 31
+            // months from 1 to 12
+            // weekdays from 1 to 7
+            CronExpressionComponent::Value(n) if *n <= 59 => {
                 if *n as u32 == date_component {
                     true
                 } else {
-                    // use 31 as the maximum number to be used in a cron expression
-                    // minutes and hours goes from 0 to 59
-                    // days from 1 to 31
-                    // months from 1 to 12
-                    // weekdays from 1 to 7
                     expression_component_matches_number(
                         CronExpressionComponent::Step(
-                            Box::new(CronExpressionComponent::Range(n + step, 59)),
+                            Box::new(CronExpressionComponent::Value(n + step)),
                             step,
                         ),
                         date_component,
