@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
 
-use crate::cron::expression::{CronExpression, CronExpressionError};
+use crate::cron::{
+    expression::{CronExpression, CronExpressionError},
+    expression_component::CronExpressionComponent,
+};
 
 fn expression_matches_datetime(
     expr: CronExpression,
@@ -9,8 +12,15 @@ fn expression_matches_datetime(
     unimplemented!()
 }
 
+fn expression_component_matches_number(
+    expr_component: CronExpressionComponent,
+    date_component: u32,
+) -> bool {
+    unimplemented!()
+}
+
 #[cfg(test)]
-mod test_expression_matches_datetimetests {
+mod test_expression_matches_datetime {
     use std::str::FromStr;
 
     use crate::cron::{evaluator::expression_matches_datetime, expression::CronExpression};
@@ -63,5 +73,82 @@ mod test_expression_matches_datetimetests {
             .and_utc();
         let result = expression_matches_datetime(cron_expression, date);
         assert_eq!(result, Ok(false))
+    }
+}
+
+#[cfg(test)]
+mod test_expression_component_matches_nunber {
+    use crate::cron::{
+        evaluator::expression_component_matches_number,
+        expression_component::CronExpressionComponent,
+    };
+
+    #[test]
+    fn all_component_matches_any_number() {
+        let expr_component = CronExpressionComponent::All;
+        let date_component = 13;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
+    }
+
+    #[test]
+    fn single_value_component_matches_number() {
+        let expr_component = CronExpressionComponent::Value(15);
+        let date_component = 15;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
+    }
+
+    #[test]
+    fn single_value_component_doesnt_match_number() {
+        let expr_component = CronExpressionComponent::Value(15);
+        let date_component = 14;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(!result)
+    }
+
+    #[test]
+    fn list_of_single_values_component_matches_number() {
+        let expr_component = CronExpressionComponent::List(vec![
+            CronExpressionComponent::Value(13),
+            CronExpressionComponent::Value(15),
+        ]);
+        let date_component = 15;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
+    }
+
+    #[test]
+    fn range_value_component_matches_number() {
+        let expr_component = CronExpressionComponent::Range(10, 20);
+        let date_component = 15;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
+    }
+
+    #[test]
+    fn range_value_component_doesn_match_number_out_of_range() {
+        let expr_component = CronExpressionComponent::Range(10, 20);
+        let date_component = 21;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(!result)
+    }
+
+    #[test]
+    fn step_value_component_matches_number() {
+        let expr_component =
+            CronExpressionComponent::Step(Box::new(CronExpressionComponent::Value(2)), 5);
+        let date_component = 12;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
+    }
+
+    #[test]
+    fn step_value_component_doesnt_match_number_unreachable() {
+        let expr_component =
+            CronExpressionComponent::Step(Box::new(CronExpressionComponent::Value(2)), 5);
+        let date_component = 13;
+        let result = expression_component_matches_number(expr_component, date_component);
+        assert!(result)
     }
 }
